@@ -232,7 +232,7 @@ test('random order and reset on the first card stay identical between instances'
   assert.notEqual(editor.text('characterName'), first);
   editor.button('nextCard');
   assert.equal(obs.text('characterName'), editor.text('characterName'));
-  assert.equal(obs.text('cardProgress'), '2 / 64');
+  assert.equal(obs.text('cardProgress'), '2 / ' + realCards.length);
 });
 
 test('a failed JSON request uses a validated local cache and reports fallback', async t => {
