@@ -1,0 +1,43 @@
+name: Publier les images Smash or Pass Peachies
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deck/cardsData.json'
+      - 'deck/streamelements-data-snippet.json'
+      - 'deck/images/**'
+      - 'prepare_pages.py'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Récupérer le projet
+        uses: actions/checkout@v7.0.1
+      - name: Valider le deck et préparer les fichiers publics
+        run: python3 prepare_pages.py --source deck --output-dir .tmp/pages
+      - name: Configurer GitHub Pages
+        uses: actions/configure-pages@v6.0.0
+      - name: Envoyer les images et JSON
+        uses: actions/upload-pages-artifact@v5.0.0
+        with:
+          path: .tmp/pages
+      - name: Déployer
+        id: deployment
+        uses: actions/deploy-pages@v5.0.1

@@ -1,4 +1,4 @@
-# Préparer le deck Smash or Pass
+# Smash or Pass Peachies
 
 Outil local pour préparer les images et les données du widget StreamElements.
 Le JSON fourni (64 cartes) est conservé dans `data/cardsData-source.json`.
@@ -20,8 +20,10 @@ Depuis le terminal PowerShell du projet :
 **Les sorties actuelles à utiliser sont dans `deck/`** : `cardsData.json`,
 `streamelements-data-snippet.json`, `build-report.md` et `images/` (WebP normalisés).
 Les fichiers de sortie à la racine proviennent du premier essai sans accès Drive.
-Pour publier, copier le contenu de `deck/images/` dans le dossier `images/` du
-dépôt GitHub Pages cible, puis utiliser le snippet présent dans `deck/`.
+Le dépôt cible est `Gawiene/smash-or-pass-peachies`. Le workflow GitHub Pages
+publie les images de `deck/images/` dans `/images/` à la racine du site.
+Les URL du snippet sont donc bien de la forme
+`https://gawiene.github.io/smash-or-pass-peachies/images/joe.webp`.
 
 Les chemins de la table sont relatifs au dossier contenant cette table.
 Les noms de carte doivent correspondre exactement au JSON source. Corriger la
@@ -153,14 +155,40 @@ Après chaque exécution :
 2. Examiner les images dans `images/`, corriger les sources puis relancer au besoin.
 3. Vérifier `cardsData.json` (tableau) et `streamelements-data-snippet.json`
    (objet avec la propriété `cardsData`).
-4. Publier manuellement `images/` sur le dépôt GitHub Pages cible. Attendre que
-   les URLs publiques fonctionnent avant de mettre à jour le widget.
+4. Après contrôle, committer et pousser les changements de `deck/` sur `main`
+   dans `Gawiene/smash-or-pass-peachies`. Le workflow publie automatiquement les
+   images normalisées et les deux JSON. Attendre la réussite du déploiement
+   dans GitHub Actions et vérifier une URL d'image avant de mettre à jour le widget.
 5. Copier la propriété `cardsData` du snippet dans l'onglet Data de StreamElements,
    en conservant les autres propriétés éventuelles du widget et un JSON valide.
 
-Le script ne pousse rien vers GitHub et ne modifie pas StreamElements.
-Les URLs générées pointent vers le futur emplacement public ; créer les fichiers
+Le script de préparation ne pousse rien vers GitHub et ne modifie pas StreamElements.
+Un push de `deck/` sur `main` déclenche la publication. Créer les fichiers
 localement ne suffit pas à les rendre accessibles sur GitHub Pages.
+
+## Hébergement GitHub Pages
+
+Dépôt : https://github.com/Gawiene/smash-or-pass-peachies
+
+Dans **Settings → Pages → Build and deployment → Source**, sélectionner
+**GitHub Actions**. Le workflow `.github/workflows/pages.yml` publie le contenu
+préparé par `prepare_pages.py` : uniquement les 64 WebP référencés (ou le nombre
+de cartes du prochain deck), les deux JSON et `.nojekyll`. Les téléchargements
+originaux, le rapport et le manifest ne sont pas inclus dans le site Pages.
+
+La préparation vérifie les URL, la présence des images et la casse exacte des
+noms avant d'envoyer le site. Le fichier `deck/images/joe.webp` est publié comme
+`/smash-or-pass-peachies/images/joe.webp`, sans le segment `deck/` dans l'URL.
+
+Vérification locale du contenu à déployer (dossier de sortie vide nécessaire) :
+
+```powershell
+.\.venv\Scripts\python.exe prepare_pages.py --output-dir .tmp/pages
+```
+
+GitHub Pages nécessite une offre compatible pour les dépôts privés. Avec
+GitHub Free, le dépôt doit être public. La préparation et le workflow ne
+changent jamais automatiquement la visibilité du dépôt.
 
 ## Vérifications automatiques
 
