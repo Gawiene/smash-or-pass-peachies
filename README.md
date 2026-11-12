@@ -114,6 +114,11 @@ Un changement de deck change sa signature et démarre une nouvelle session.
 L'éditeur et OBS doivent donc recharger la même version du deck après une mise
 à jour. Le cache facultatif est propre à chaque navigateur.
 
+Les deux photos suivantes sont préchargées. Une carte revient au centre avec
+sa nouvelle image et ses textes ensemble, après décodage de la photo. Si une
+image échoue ou dépasse dix secondes de chargement, le fond neutre est affiché
+et le debug signale l'erreur, sans conserver la photo de la carte précédente.
+
 ## Mise à jour
 
 1. Remplacer ou modifier **`data/cardsData.json`**. C'est le deck utilisé par le

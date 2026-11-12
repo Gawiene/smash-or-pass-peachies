@@ -47,7 +47,7 @@ const card = document.getElementById("card");
 const gameScreen = document.getElementById("gameScreen");
 const summaryScreen = document.getElementById("summaryScreen");
 const cardProgress = document.getElementById("cardProgress");
-const characterImage = document.getElementById("characterImage");
+let characterImage = document.getElementById("characterImage");
 const characterName = document.getElementById("characterName");
 const characterOrigin = document.getElementById("characterOrigin");
 const characterCredit = document.getElementById("characterCredit");
@@ -123,7 +123,102 @@ function recalculateVotes(){ smashVotes=0;passVotes=0; Object.values(viewerVotes
 function getVoteData(){ const total=smashVotes+passVotes; if(total===0)return{total:0,smashPercentage:50,passPercentage:50,chatChoice:"none"}; const smashPercentage=Math.round((smashVotes/total)*100); const passPercentage=100-smashPercentage; let chatChoice="tie"; if(smashVotes>passVotes)chatChoice="smash"; if(passVotes>smashVotes)chatChoice="pass"; return{total,smashPercentage,passPercentage,chatChoice}; }
 function updateVotes(){ recalculateVotes(); const voteData=getVoteData(); if(smashPercent)smashPercent.textContent=String(voteData.smashPercentage); if(passPercent)passPercent.textContent=String(voteData.passPercentage); if(voteCount)voteCount.textContent=String(voteData.total); if(smashBar)smashBar.style.width=voteData.smashPercentage+"%"; if(passBar)passBar.style.width=voteData.passPercentage+"%"; }
 function hideResult(){ if(result)result.classList.remove("visible"); if(resultStreamer)resultStreamer.textContent=""; if(resultChat)resultChat.textContent=""; const streamerLine=document.querySelector(".result-streamer"); const chatLine=document.querySelector(".result-chat"); if(streamerLine)streamerLine.classList.remove("smash","pass"); if(chatLine)chatLine.classList.remove("smash","pass"); }
-function renderCurrentCard(options){ const settings=options||{}; if(deck.length===0){ if(characterName)characterName.textContent="Aucune carte"; if(characterOrigin)characterOrigin.textContent=""; if(characterCredit)characterCredit.textContent=""; if(cardProgress)cardProgress.textContent="0 / 0"; if(characterImage)characterImage.removeAttribute("src"); updateVotes(); return; } const character=deck[currentIndex]; if(!character)return; if(settings.hideResult!==false)hideResult(); if(characterName)characterName.textContent=character.name; if(characterOrigin)characterOrigin.textContent=character.origin||""; if(characterCredit)characterCredit.textContent=character.credit?"Proposé par "+character.credit:""; if(characterImage){characterImage.src=character.image;characterImage.alt=character.name;} if(cardProgress)cardProgress.textContent=String(currentIndex+1)+" / "+String(deck.length); updateVotes(); }
+const cardImages = new Map();
+let cardRenderRevision = 0;
+
+function prepareCardImage(url) {
+  if (cardImages.has(url)) return cardImages.get(url);
+  const image = new Image();
+  image.referrerPolicy = "no-referrer";
+  image.decoding = "async";
+  const entry = { image: image, status: "loading", ready: null };
+  cardImages.set(url, entry);
+  entry.ready = new Promise(function (resolve) {
+    const timeout = setTimeout(function () { finish("error"); }, 10000);
+    function finish(status) {
+      if (entry.status !== "loading") return;
+      entry.status = status;
+      clearTimeout(timeout);
+      image.onload = null;
+      image.onerror = null;
+      if (status === "error" && cardImages.get(url) === entry) cardImages.delete(url);
+      resolve();
+    }
+    image.onload = async function () {
+      try {
+        if (typeof image.decode === "function") await image.decode();
+        finish("ready");
+      } catch (error) { finish("error"); }
+    };
+    image.onerror = function () { finish("error"); };
+    image.src = url;
+  });
+  return entry;
+}
+
+function preloadUpcomingImages() {
+  const keep = new Set();
+  for (let index = currentIndex; index < Math.min(deck.length, currentIndex + 3); index += 1) {
+    keep.add(deck[index].image);
+    prepareCardImage(deck[index].image);
+  }
+  // Conserver seulement la carte courante et les deux prochaines en mémoire.
+  cardImages.forEach(function (entry, url) { if (!keep.has(url)) cardImages.delete(url); });
+}
+
+function renderCurrentCard(options) {
+  const settings = options || {};
+  const revision = ++cardRenderRevision;
+  if (deck.length === 0) {
+    if (characterName) characterName.textContent = "Aucune carte";
+    if (characterOrigin) characterOrigin.textContent = "";
+    if (characterCredit) characterCredit.textContent = "";
+    if (cardProgress) cardProgress.textContent = "0 / 0";
+    if (characterImage) characterImage.removeAttribute("src");
+    updateVotes();
+    return;
+  }
+  const character = deck[currentIndex];
+  if (!character) return;
+  if (settings.hideResult !== false) hideResult();
+  const prepared = prepareCardImage(character.image);
+  if (card) { card.style.transition = "none"; card.style.opacity = "0"; }
+  function presentCard() {
+    if (revision !== cardRenderRevision || gameFinished || deck[currentIndex] !== character) return;
+    if (prepared.status === "ready") {
+      // Insérer la photo déjà décodée plutôt que changer le src de l'ancienne.
+      prepared.image.id = "characterImage";
+      prepared.image.alt = character.name;
+      if (characterImage !== prepared.image) {
+        characterImage.replaceWith(prepared.image);
+        characterImage = prepared.image;
+      }
+    } else {
+      const emptyImage = document.createElement("img");
+      emptyImage.id = "characterImage";
+      emptyImage.alt = "";
+      characterImage.replaceWith(emptyImage);
+      characterImage = emptyImage;
+      debug("⚠ Image indisponible : " + character.name);
+    }
+    if (characterName) characterName.textContent = character.name;
+    if (characterOrigin) characterOrigin.textContent = character.origin || "";
+    if (characterCredit) characterCredit.textContent = character.credit ? "Proposé par " + character.credit : "";
+    if (cardProgress) cardProgress.textContent = String(currentIndex + 1) + " / " + String(deck.length);
+    updateVotes();
+    if (card) {
+      void card.offsetWidth;
+      requestAnimationFrame(function () {
+        if (revision !== cardRenderRevision || gameFinished) return;
+        card.style.transition = "";
+        card.style.opacity = "1";
+      });
+    }
+  }
+  if (prepared.status === "ready") presentCard();
+  else prepared.ready.then(presentCard);
+  preloadUpcomingImages();
+}
 function makeAction(type,data){ return Object.assign({ id:String(Date.now())+"_"+String(Math.random()), type },data||{}); }
 function createSharedState(action){ sharedRevision+=1; return { version:STATE_VERSION, deckSignature, deckOrder, seed:deckSeed, currentIndex, viewerVotes:Object.assign({},viewerVotes), gameResults:gameResults.slice(), gameFinished, revision:sharedRevision, action:action||null, updatedAt:Date.now() }; }
 function saveSharedState(action){
@@ -179,7 +274,7 @@ function streamerVote(choice,customActionId){
   },1650);
 }
 function swipeCard(choice){ if(!card)return; card.classList.remove("swipe-smash","swipe-pass"); card.classList.add(choice==="smash"?"swipe-smash":"swipe-pass"); }
-function nextCard(shouldSave){ if(deck.length===0)return; if(currentIndex>=deck.length-1){ showSummary(shouldSave!==false);return; } currentIndex+=1; clearViewerVotes(); smashVotes=0;passVotes=0; hideResult(); if(card){ card.style.transition="none"; card.style.opacity="0"; card.classList.remove("swipe-smash","swipe-pass"); } renderCurrentCard(); if(card){ void card.offsetWidth; requestAnimationFrame(function(){ card.style.transition=""; card.style.opacity="1"; }); } isAnimating=false; if(shouldSave!==false) saveSharedState(makeAction("next",{cardIndex:currentIndex})); }
+function nextCard(shouldSave){ if(deck.length===0)return; if(currentIndex>=deck.length-1){ showSummary(shouldSave!==false);return; } currentIndex+=1; clearViewerVotes(); smashVotes=0;passVotes=0; hideResult(); if(card){ card.style.transition="none"; card.style.opacity="0"; card.classList.remove("swipe-smash","swipe-pass"); } renderCurrentCard(); isAnimating=false; if(shouldSave!==false) saveSharedState(makeAction("next",{cardIndex:currentIndex})); }
 function showSummary(shouldSave){ gameFinished=true;isAnimating=false; if(gameScreen)gameScreen.classList.add("hidden"); if(summaryScreen)summaryScreen.classList.add("visible"); let streamerSmashes=0,streamerPasses=0,chatSmashes=0,chatPasses=0,chatTies=0,chatNoVotes=0; let strongestSmash=null,strongestPass=null; gameResults.forEach(function(entry){ if(entry.streamerChoice==="smash")streamerSmashes+=1; else streamerPasses+=1; if(entry.chatChoice==="smash")chatSmashes+=1; if(entry.chatChoice==="pass")chatPasses+=1; if(entry.chatChoice==="tie")chatTies+=1; if(entry.chatChoice==="none")chatNoVotes+=1; if(entry.totalVotes>0){ if(!strongestSmash||entry.smashPercentage>strongestSmash.smashPercentage)strongestSmash=entry; if(!strongestPass||entry.passPercentage>strongestPass.passPercentage)strongestPass=entry; } }); if(streamerSmashCount)streamerSmashCount.textContent=String(streamerSmashes); if(streamerPassCount)streamerPassCount.textContent=String(streamerPasses); if(chatSmashCount)chatSmashCount.textContent=String(chatSmashes); if(chatPassCount)chatPassCount.textContent=String(chatPasses); if(chatTieCount)chatTieCount.textContent=String(chatTies); if(chatNoVoteCount)chatNoVoteCount.textContent=String(chatNoVotes); if(topSmash)topSmash.textContent=strongestSmash?"♥ Plus gros Smash : "+strongestSmash.name+" — "+strongestSmash.smashPercentage+"%":"♥ Plus gros Smash : —"; if(topPass)topPass.textContent=strongestPass?"✕ Plus gros Pass : "+strongestPass.name+" — "+strongestPass.passPercentage+"%":"✕ Plus gros Pass : —"; if(shouldSave!==false)saveSharedState(makeAction("finish")); }
 function startFreshGame(shouldSave){ gameResults.length=0; clearViewerVotes(); smashVotes=0;passVotes=0; gameFinished=false;isAnimating=false;currentIndex=0;deckSeed=1; buildDeck(); if(summaryScreen)summaryScreen.classList.remove("visible"); if(gameScreen)gameScreen.classList.remove("hidden"); if(card){ card.classList.remove("swipe-smash","swipe-pass"); card.style.opacity="1"; card.style.transition=""; } renderCurrentCard(); if(shouldSave)saveSharedState(makeAction("init")); }
 function resetDeck(){ gameResults.length=0; clearViewerVotes(); smashVotes=0;passVotes=0; gameFinished=false;isAnimating=false;currentIndex=0; deckSeed+=1; buildDeck(); if(summaryScreen)summaryScreen.classList.remove("visible"); if(gameScreen)gameScreen.classList.remove("hidden"); if(card){ card.classList.remove("swipe-smash","swipe-pass"); card.style.opacity="1"; card.style.transition=""; } renderCurrentCard(); saveSharedState(makeAction("reset",{seed:deckSeed})); }

@@ -48,6 +48,31 @@ function runtime(t, options = {}) {
   w.requestAnimationFrame = fn => w.setTimeout(fn, 0);
   w.AbortController = AbortController;
   w.CSS = { supports: (kind, value) => kind === 'color' && /^#[a-f\d]{6}$/i.test(value) };
+  const imageRequests = new Map();
+  const NativeImage = w.Image;
+  w.Image = function () {
+    const image = new NativeImage();
+    let resolveDecode;
+    const decoded = new Promise(resolve => { resolveDecode = resolve; });
+    image.decode = () => decoded;
+    Object.defineProperty(image, 'src', {
+      get() { return image.getAttribute('src') || ''; },
+      set(url) {
+        image.setAttribute('src', url);
+        const request = {
+          image,
+          load() { if (image.onload) image.onload(); },
+          decode() { resolveDecode(); },
+          fail() { if (image.onerror) image.onerror(); }
+        };
+        imageRequests.set(url, request);
+        if (!(options.slowImages || []).includes(url)) {
+          Promise.resolve().then(() => { request.load(); request.decode(); });
+        }
+      }
+    });
+    return image;
+  };
   const calls = [];
   w.fetch = async (url, config) => {
     calls.push({ url, config });
@@ -58,7 +83,7 @@ function runtime(t, options = {}) {
   if (!options.noStore) w.SE_API = store.api();
   if (options.cache) w.localStorage.setItem('peachies-cards:https://gawiene.github.io/smash-or-pass-peachies/data/cardsData.json', JSON.stringify(options.cache));
   const api = {
-    w, store, calls,
+    w, store, calls, imageRequests,
     text: id => w.document.getElementById(id).textContent,
     element: id => w.document.getElementById(id),
     event(listener, event) { w.dispatchEvent(new w.CustomEvent('onEventReceived', { detail: { listener, event } })); },
@@ -168,7 +193,7 @@ test('existing test buttons, both SE event types, navigation and reset remain av
   r.button('streamerSmash'); await r.advance(1650);
   assert.equal(r.text('cardProgress'), '2 / 3');
   r.button('nextCard'); assert.equal(r.text('cardProgress'), '3 / 3');
-  r.button('resetDeck'); assert.equal(r.text('cardProgress'), '1 / 3');
+  r.button('resetDeck'); await settle(); assert.equal(r.text('cardProgress'), '1 / 3');
   assert.equal(r.text('voteCount'), '0');
   assert.deepEqual(r.store.saved.gameResults, []);
   assert.equal(r.store.saved.seed, 2);
@@ -202,6 +227,7 @@ test('random order and reset on the first card stay identical between instances'
   const first = editor.text('characterName');
   assert.equal(obs.text('characterName'), first);
   editor.button('resetDeck');
+  await settle();
   assert.equal(obs.text('characterName'), editor.text('characterName'));
   assert.notEqual(editor.text('characterName'), first);
   editor.button('nextCard');
@@ -260,4 +286,72 @@ test('Fields retain all controls and colors, external CSS has no SE placeholders
   assert.equal(css.includes('{{'), false);
   Object.entries(fields).filter(([, field]) => field.type === 'colorpicker').forEach(([name]) => assert.ok(code.includes('"' + name + '"'), name));
   assert.equal(code.includes('fieldData["cardsData"]'), false);
+});
+
+test('a returning card waits for the next image to load and decode before showing its new data', async t => {
+  const nextImage = cards[1].image;
+  const r = runtime(t, { slowImages: [nextImage] }); r.load(); await settle();
+  await r.advance(0);
+  assert.equal(r.text('characterName'), 'Joe');
+  r.chat('!pass', 'streamer', true);
+  await r.advance(1650);
+  assert.equal(r.element('card').style.opacity, '0');
+  assert.equal(r.text('characterName'), 'Joe', 'new metadata must not accompany the old photo');
+  const pending = r.imageRequests.get(nextImage);
+  assert.ok(pending, 'next image should be preloaded');
+  pending.load(); await settle();
+  assert.equal(r.text('characterName'), 'Joe', 'load alone is insufficient before decoding finishes');
+  pending.decode(); await settle(); await r.advance(0);
+  assert.equal(r.text('characterName'), cards[1].name);
+  assert.equal(r.element('characterImage'), pending.image, 'insert the already decoded image itself');
+  assert.equal(r.element('characterImage').getAttribute('src'), nextImage);
+  assert.equal(r.element('card').style.opacity, '1');
+});
+
+test('a late image from a skipped card cannot replace the current card', async t => {
+  const r = runtime(t, { slowImages: [cards[1].image, cards[2].image] }); r.load(); await settle();
+  r.button('nextCard'); await r.advance(300); r.button('nextCard');
+  const current = r.imageRequests.get(cards[2].image);
+  const skipped = r.imageRequests.get(cards[1].image);
+  assert.ok(current && skipped, 'upcoming photos should be preloaded');
+  current.load(); current.decode(); await settle(); await r.advance(0);
+  assert.equal(r.text('characterName'), cards[2].name);
+  skipped.load(); skipped.decode(); await settle(); await r.advance(0);
+  assert.equal(r.text('characterName'), cards[2].name);
+  assert.equal(r.element('characterImage').getAttribute('src'), cards[2].image);
+});
+
+test('a failed image shows the new card background without leaving the previous photo', async t => {
+  const r = runtime(t, { slowImages: [cards[1].image] }); r.load(); await settle();
+  r.button('nextCard');
+  const pending = r.imageRequests.get(cards[1].image);
+  assert.ok(pending, 'image request expected');
+  pending.fail(); await settle(); await r.advance(0);
+  assert.equal(r.text('characterName'), cards[1].name);
+  assert.equal(r.element('characterImage').hasAttribute('src'), false);
+  assert.equal(r.element('card').style.opacity, '1');
+});
+
+test('a slow OBS image stays hidden while the shared state advances normally', async t => {
+  const store = hub();
+  const editor = runtime(t, { store }); editor.load(); await settle();
+  const obs = runtime(t, { store, slowImages: [cards[1].image] }); obs.load(); await settle();
+  editor.chat('!pass', 'streamer', true); await editor.advance(1650); await obs.advance(1650);
+  assert.equal(store.saved.currentIndex, 1);
+  assert.equal(editor.text('characterName'), cards[1].name);
+  assert.equal(obs.element('card').style.opacity, '0');
+  const image = obs.imageRequests.get(cards[1].image);
+  image.load(); image.decode(); await settle(); await obs.advance(0);
+  assert.equal(obs.text('characterName'), editor.text('characterName'));
+  assert.equal(obs.element('characterImage').getAttribute('src'), cards[1].image);
+  assert.equal(store.saved.version, 3);
+});
+
+test('an image that never finishes times out without trapping the card invisible', async t => {
+  const r = runtime(t, { slowImages: [cards[1].image] }); r.load(); await settle();
+  r.button('nextCard'); await r.advance(10000);
+  assert.equal(r.element('card').style.opacity, '1');
+  assert.equal(r.text('characterName'), cards[1].name);
+  assert.equal(r.element('characterImage').hasAttribute('src'), false);
+  assert.equal(r.text('cardProgress'), '2 / 3');
 });
