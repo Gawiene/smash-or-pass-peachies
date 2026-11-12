@@ -1,14 +1,22 @@
-<div id="sop-loader-status" role="status">Chargement de Smash or Pass Peachies…</div>
+<div id="sop-loader-status" role="status" style="padding:12px;color:#302c30;background:#f2ede7;font:14px Arial,sans-serif">Chargement de Smash or Pass Peachies…</div>
 <script>
 (function () {
-  if (window.__sopPeachiesBridge) return;
-  var bridge = window.__sopPeachiesBridge = { queue: [], receive: null };
+  if (window.__sopPeachiesBridge) {
+    var existing = window.__sopPeachiesBridge;
+    existing.receive = null;
+    if (existing.lastLoad && !existing.queue.some(function (entry) { return entry[0] === "onWidgetLoad"; })) {
+      existing.queue.push(["onWidgetLoad", existing.lastLoad]);
+    }
+    return;
+  }
+  var bridge = window.__sopPeachiesBridge = { queue: [], receive: null, lastLoad: null };
   ["onWidgetLoad", "onEventReceived"].forEach(function (type) {
     window.addEventListener(type, function (event) {
       var detail = type === "onWidgetLoad"
         ? { fieldData: (event.detail && event.detail.fieldData) || {} }
         : event.detail;
       var payload = { detail: detail };
+      if (type === "onWidgetLoad") bridge.lastLoad = payload;
       if (bridge.receive) bridge.receive(type, payload);
       else bridge.queue.push([type, payload]);
     });
@@ -16,4 +24,4 @@
 })();
 </script>
 <link rel="stylesheet" href="https://gawiene.github.io/smash-or-pass-peachies/widget/widget.css" referrerpolicy="no-referrer" />
-<script src="https://gawiene.github.io/smash-or-pass-peachies/widget/widget.js" referrerpolicy="no-referrer" onerror="document.getElementById('sop-loader-status').textContent='Widget indisponible. Vérifier GitHub Pages puis recharger.'"></script>
+<script src="https://gawiene.github.io/smash-or-pass-peachies/widget/widget.js?v=startup-2" referrerpolicy="no-referrer" onerror="document.getElementById('sop-loader-status').textContent='Widget indisponible. Vérifier GitHub Pages puis recharger.'"></script>

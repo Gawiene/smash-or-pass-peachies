@@ -355,3 +355,102 @@ test('an image that never finishes times out without trapping the card invisible
   assert.equal(r.element('characterImage').hasAttribute('src'), false);
   assert.equal(r.text('cardProgress'), '2 / 3');
 });
+
+test('replacing the HTML in an existing window remounts the widget instead of leaving a blank overlay', async t => {
+  const r = runtime(t); r.load(); await settle(); await r.advance(0);
+  r.w.document.body.innerHTML = '<section id="widget-host"><div id="sop-loader-status">Loading</div></section>';
+  r.w.eval(bootstrap);
+  r.execute();
+  await settle(); await r.advance(0);
+  assert.ok(r.element('sopPeachiesRoot'), 'a previous global guard must not suppress the new DOM');
+  assert.equal(r.text('characterName'), 'Joe');
+  assert.equal(r.element('sopPeachiesRoot').parentElement.id, 'widget-host');
+  assert.equal(r.element('card').style.opacity, '1');
+});
+
+test('the widget mounts inside its loader container, preserving StreamElements positioning', async t => {
+  const r = runtime(t, { deferScript: true });
+  const host = r.w.document.createElement('section');
+  host.id = 'widget-host';
+  r.element('sop-loader-status').replaceWith(host);
+  host.innerHTML = '<div id="sop-loader-status">Loading</div>';
+  r.execute(); r.load(); await settle();
+  assert.equal(r.element('sopPeachiesRoot').parentElement, host);
+});
+
+test('a fresh loader replaces an old mount and preserves the current shared card', async t => {
+  const r = runtime(t); r.load(); await settle();
+  r.button('nextCard'); await settle();
+  const old = r.element('sopPeachiesRoot');
+  const host = r.w.document.createElement('section');
+  host.id = 'replacement-host';
+  host.innerHTML = '<div id="sop-loader-status">Loading</div>';
+  r.w.document.body.appendChild(host);
+  r.w.eval(bootstrap); r.execute(); await settle(); await r.advance(0);
+  assert.equal(r.w.document.querySelectorAll('#sopPeachiesRoot').length, 1);
+  assert.equal(old.isConnected, false);
+  assert.equal(r.element('sopPeachiesRoot').parentElement, host);
+  assert.equal(r.text('cardProgress'), '2 / 3');
+  assert.equal(r.text('characterName'), cards[1].name);
+});
+
+test('all six viewer Fields buttons retain one changeable vote each', async t => {
+  const r = runtime(t); r.load(); await settle();
+  for (let viewer = 1; viewer <= 3; viewer++) r.button('testViewer' + viewer + 'Smash', viewer % 2 ? 'widget-button' : 'event:test');
+  assert.equal(r.text('voteCount'), '3');
+  assert.equal(r.text('smashPercent'), '100');
+  for (let viewer = 1; viewer <= 3; viewer++) r.button('testViewer' + viewer + 'Pass', viewer % 2 ? 'event:test' : 'widget-button');
+  assert.equal(r.text('voteCount'), '3');
+  assert.equal(r.text('passPercent'), '100');
+  await r.advance(150);
+  assert.deepEqual(r.store.saved.viewerVotes, { 'test-viewer-1': 'pass', 'test-viewer-2': 'pass', 'test-viewer-3': 'pass' });
+});
+
+test('all 27 color Fields and debug survive a reload with current configuration', async t => {
+  const r = runtime(t);
+  const colors = Object.entries(fields).filter(([, field]) => field.type === 'colorpicker');
+  assert.equal(colors.length, 27);
+  const values = Object.fromEntries(colors.map(([key], index) => [key, '#' + (index + 1).toString(16).padStart(6, '0')]));
+  r.load({ ...values, showDebug: true }); await settle();
+  const assertColors = () => {
+    const style = r.w.document.querySelector('.sop-widget').style;
+    assert.equal(style.length, 27);
+    const applied = new Set(Array.from({ length: style.length }, (_, index) => style.getPropertyValue(style[index])));
+    for (const color of Object.values(values)) assert.ok(applied.has(color), color);
+    assert.equal(r.element('debugPanel').classList.contains('hidden'), false);
+  };
+  assertColors();
+  r.w.document.body.innerHTML = '<div id="sop-loader-status">Loading</div>';
+  r.w.eval(bootstrap); r.execute(); await settle();
+  assertColors();
+  r.load({ showDebug: false }); await settle();
+  assert.equal(r.element('debugPanel').classList.contains('hidden'), true);
+});
+
+test('Fields reset reinitializes a completed restored deck and synchronizes OBS', async t => {
+  const store = hub();
+  const editor = runtime(t, { store }); editor.load(); await settle();
+  const obs = runtime(t, { store }); obs.load(); await settle();
+  for (let index = 0; index < cards.length; index++) {
+    editor.button(index % 2 ? 'streamerSmash' : 'streamerPass');
+    await editor.advance(1650); await obs.advance(1650);
+  }
+  assert.equal(store.saved.gameFinished, true);
+  assert.equal(store.saved.gameResults.length, 3);
+  editor.w.document.body.innerHTML = '<div id="sop-loader-status">Loading</div>';
+  editor.w.eval(bootstrap); editor.execute(); await settle();
+  assert.equal(editor.element('summaryScreen').classList.contains('visible'), true);
+  editor.button('resetDeck', 'event:test'); await settle();
+  await editor.advance(0); await obs.advance(0);
+  for (const r of [editor, obs]) {
+    assert.equal(r.text('cardProgress'), '1 / 3');
+    assert.equal(r.text('voteCount'), '0');
+    assert.equal(r.element('summaryScreen').classList.contains('visible'), false);
+    assert.equal(r.element('gameScreen').classList.contains('hidden'), false);
+    assert.equal(r.element('card').style.opacity, '1');
+  }
+  assert.equal(store.saved.seed, 2);
+  assert.equal(store.saved.gameFinished, false);
+  assert.deepEqual(store.saved.gameResults, []);
+  assert.deepEqual(store.saved.viewerVotes, {});
+});

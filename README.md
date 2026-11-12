@@ -85,6 +85,11 @@ suivante arrive automatiquement. Le récapitulatif s'affiche à la fin.
 
 Les Fields conservent :
 
+**Les Fields sont obligatoires.** Tous les contrôles administratifs sont créés
+par `streamelements/fields.json` dans StreamElements. Le JavaScript hébergé lit
+leurs valeurs via `onWidgetLoad` et reçoit leurs boutons via `event:test` ou
+`widget-button`. Ils conservent les noms, labels, groupes et valeurs d'origine.
+
 - Toutes les couleurs du widget, de la photo, du résultat, du récap et du debug.
 - Le debug optionnel, caché par défaut.
 - Les six boutons de test de vote des trois viewers, avec changement de vote.
@@ -102,6 +107,13 @@ de votes/résultats et le mélange déterministe du widget d'origine sont conser
 Les événements `message`, `kvstore:update`, `event:test` et `widget-button` sont
 tous pris en charge. Les événements arrivant pendant le chargement du deck
 sont mis en attente, puis rejoués une fois l'état restauré.
+
+Recharger l'éditeur ou OBS reprend la session enregistrée, même si le deck est
+terminé. Pour démarrer une nouvelle partie, utiliser **Recommencer le deck**
+dans les Fields : les résultats et votes sont vidés, la première carte revient
+et le nouveau paquet est synchronisé entre les instances. En ordre aléatoire,
+ce bouton effectue un nouveau mélange partagé. Un simple rechargement de page
+ne remplace pas ce bouton et ne doit pas effacer une partie en cours dans OBS.
 
 Le deck vient exclusivement de `data/cardsData.json` sur GitHub Pages. En cas
 d'erreur réseau ou de JSON invalide, le widget utilise la dernière version valide
@@ -145,6 +157,18 @@ et le debug signale l'erreur, sans conserver la photo de la carte précédente.
 Pour une mise à jour du code ou du CSS qui paraît rester en cache, rafraîchir
 le cache de la source Navigateur OBS. On peut aussi ajouter le même paramètre
 `?v=2` aux deux URL CSS/JS dans le loader, puis réenregistrer le widget.
+
+Le loader actuel utilise `widget.js?v=startup-2` pour forcer le chargement de la
+version qui réinstalle le widget après remplacement du HTML. Publier d'abord
+les changements du JavaScript et du loader, puis, si le changement ne se voit pas,
+recopier le loader complet dans **HTML** du Custom Widget StreamElements,
+enregistrer l'overlay, puis recharger sa source navigateur dans OBS ou Streamlabs
+Desktop. Conserver les Fields et les valeurs de configuration. La modification
+du fichier local ne met pas à jour automatiquement le HTML collé dans StreamElements.
+
+Le contenu du widget est injecté à l'emplacement du loader, dans son conteneur
+StreamElements. Remplacer le HTML réinstalle l'affichage et reprend les derniers
+Fields connus, même si l'éditeur conserve la même fenêtre entre deux changements.
 
 ## Fichiers utiles
 

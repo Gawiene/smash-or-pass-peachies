@@ -1,14 +1,18 @@
 /* Smash or Pass Peachies — exécuter dans le Custom Widget StreamElements. */
 (function () {
 "use strict";
-if (window.__sopPeachiesMounted) return;
+const loaderStatus = document.getElementById("sop-loader-status");
+const previousMount = document.getElementById("sopPeachiesRoot");
+if (previousMount && !loaderStatus) return;
+if (typeof window.__sopPeachiesDispose === "function") window.__sopPeachiesDispose();
+if (previousMount) previousMount.remove();
+let disposed = false;
 window.__sopPeachiesMounted = true;
 const mount = document.createElement("div");
 mount.id = "sopPeachiesRoot";
 mount.innerHTML = "<div class=\"sop-widget\">\n  <div class=\"sop-load-status\" id=\"sopLoadStatus\" role=\"status\">Chargement du deck…</div>\n  <div class=\"game-screen card-stack hidden\" id=\"gameScreen\">\n    <div class=\"card\" id=\"card\">\n      <div class=\"game-topbar\">\n        <div class=\"game-title\">SMASH OR PASS</div>\n        <div class=\"card-counter\" id=\"cardProgress\">0 / 0</div>\n      </div>\n      <div class=\"character-stage\">\n        <div class=\"floating-choice floating-pass\">\n          <div class=\"floating-icon\">✕</div>\n          <div class=\"floating-label\">PASS</div>\n        </div>\n        <div class=\"image-wrapper\">\n          <img id=\"characterImage\" src=\"\" alt=\"\" />\n          <div class=\"image-gradient\"></div>\n          <div class=\"result-overlay\" id=\"result\">\n            <div class=\"result-line result-streamer\">\n              <span class=\"result-small\">STREAMER</span>\n              <span class=\"result-value\" id=\"resultStreamer\"></span>\n            </div>\n            <div class=\"result-separator\"></div>\n            <div class=\"result-line result-chat\">\n              <span class=\"result-small\">CHAT</span>\n              <span class=\"result-value\" id=\"resultChat\"></span>\n            </div>\n          </div>\n          <div class=\"swipe-stamp stamp-pass\">PASS</div>\n          <div class=\"swipe-stamp stamp-smash\">SMASH</div>\n          <div class=\"character-info\">\n            <div class=\"character-name\" id=\"characterName\">Personnage</div>\n            <div class=\"character-origin\" id=\"characterOrigin\"></div>\n            <div class=\"character-credit\" id=\"characterCredit\"></div>\n          </div>\n        </div>\n        <div class=\"floating-choice floating-smash\">\n          <div class=\"floating-icon\">♥</div>\n          <div class=\"floating-label\">SMASH</div>\n        </div>\n      </div>\n      <div class=\"vote-zone\">\n        <div class=\"vote-row\">\n          <div class=\"vote-side pass-value\">\n            <span class=\"vote-symbol\">✕</span>\n            <span class=\"vote-label\">PASS</span>\n            <strong><span id=\"passPercent\">50</span>%</strong>\n          </div>\n          <div class=\"vote-count\"><span id=\"voteCount\">0</span> vote(s)</div>\n          <div class=\"vote-side smash-value\">\n            <strong><span id=\"smashPercent\">50</span>%</strong>\n            <span class=\"vote-label\">SMASH</span>\n            <span class=\"vote-symbol\">♥</span>\n          </div>\n        </div>\n        <div class=\"vote-bar\">\n          <div class=\"pass-bar\" id=\"passBar\"></div>\n          <div class=\"smash-bar\" id=\"smashBar\"></div>\n        </div>\n      </div>\n    </div>\n  </div>\n\n  <div class=\"summary\" id=\"summaryScreen\">\n    <div class=\"summary-header\">\n      <div>\n        <div class=\"summary-title\">RÉCAP SMASH OR PASS</div>\n        <div class=\"summary-subtitle\">Résultats de la session</div>\n      </div>\n      <div class=\"summary-finish-icon\">✓</div>\n    </div>\n    <div class=\"summary-section\">\n      <div class=\"summary-section-title\">🎙 CHOIX DU STREAMER</div>\n      <div class=\"summary-choice-grid\">\n        <div class=\"summary-choice summary-smash\"><span class=\"summary-choice-icon\">♥</span><strong id=\"streamerSmashCount\">0</strong><span>SMASH</span></div>\n        <div class=\"summary-choice summary-pass\"><span class=\"summary-choice-icon\">✕</span><strong id=\"streamerPassCount\">0</strong><span>PASS</span></div>\n      </div>\n    </div>\n    <div class=\"summary-section\">\n      <div class=\"summary-section-title\">💬 TENDANCE DU CHAT</div>\n      <div class=\"summary-chat-grid\">\n        <div class=\"summary-mini-stat\"><strong id=\"chatSmashCount\">0</strong><span>♥ Smash</span></div>\n        <div class=\"summary-mini-stat\"><strong id=\"chatPassCount\">0</strong><span>✕ Pass</span></div>\n        <div class=\"summary-mini-stat\"><strong id=\"chatTieCount\">0</strong><span>= 50/50</span></div>\n        <div class=\"summary-mini-stat\"><strong id=\"chatNoVoteCount\">0</strong><span>Aucun vote</span></div>\n      </div>\n    </div>\n    <div class=\"summary-section\">\n      <div class=\"summary-section-title\">🔥 LES EXTRÊMES DU CHAT</div>\n      <div class=\"summary-highlight top-smash\" id=\"topSmash\">♥ Plus gros Smash : —</div>\n      <div class=\"summary-highlight top-pass\" id=\"topPass\">✕ Plus gros Pass : —</div>\n    </div>\n  </div>\n\n  <div class=\"debug-panel hidden\" id=\"debugPanel\">\n    <div class=\"debug-title\">🔧 DEBUG</div>\n    <div class=\"debug-status\" id=\"debugStatus\">Chargement…</div>\n    <div class=\"debug-log\" id=\"debugLog\"></div>\n  </div>\n</div>";
-document.body.appendChild(mount);
-const loaderStatus = document.getElementById("sop-loader-status");
-if (loaderStatus) loaderStatus.remove();
+if (loaderStatus && loaderStatus.parentNode) loaderStatus.replaceWith(mount);
+else document.body.appendChild(mount);
 const hostedImage = document.getElementById("characterImage");
 if (hostedImage) hostedImage.referrerPolicy = "no-referrer";
 const widgetRoot = mount.querySelector(".sop-widget");
@@ -184,7 +188,7 @@ function renderCurrentCard(options) {
   const prepared = prepareCardImage(character.image);
   if (card) { card.style.transition = "none"; card.style.opacity = "0"; }
   function presentCard() {
-    if (revision !== cardRenderRevision || gameFinished || deck[currentIndex] !== character) return;
+    if (disposed || revision !== cardRenderRevision || gameFinished || deck[currentIndex] !== character) return;
     if (prepared.status === "ready") {
       // Insérer la photo déjà décodée plutôt que changer le src de l'ancienne.
       prepared.image.id = "characterImage";
@@ -209,7 +213,7 @@ function renderCurrentCard(options) {
     if (card) {
       void card.offsetWidth;
       requestAnimationFrame(function () {
-        if (revision !== cardRenderRevision || gameFinished) return;
+        if (disposed || revision !== cardRenderRevision || gameFinished) return;
         card.style.transition = "";
         card.style.opacity = "1";
       });
@@ -222,6 +226,7 @@ function renderCurrentCard(options) {
 function makeAction(type,data){ return Object.assign({ id:String(Date.now())+"_"+String(Math.random()), type },data||{}); }
 function createSharedState(action){ sharedRevision+=1; return { version:STATE_VERSION, deckSignature, deckOrder, seed:deckSeed, currentIndex, viewerVotes:Object.assign({},viewerVotes), gameResults:gameResults.slice(), gameFinished, revision:sharedRevision, action:action||null, updatedAt:Date.now() }; }
 function saveSharedState(action){
+  if(disposed)return;
   if(typeof SE_API==="undefined" || !SE_API.store){ debug("⚠ Store StreamElements indisponible"); return; }
   const state=createSharedState(action);
   if(action && action.id){ ownActionIds.add(action.id); if(ownActionIds.size>100)ownActionIds.delete(ownActionIds.values().next().value); }
@@ -232,6 +237,7 @@ function saveSharedState(action){
 }
 function scheduleVoteSave(){ if(voteSaveTimer)clearTimeout(voteSaveTimer); voteSaveTimer=setTimeout(function(){ saveSharedState(makeAction("votes")); },150); }
 function applySharedState(state,fromRemote){
+  if(disposed)return false;
   if(!state || typeof state!=="object")return false;
   if(state.version!==STATE_VERSION)return false;
   if(state.deckSignature!==deckSignature)return false;
@@ -250,7 +256,7 @@ function applySharedState(state,fromRemote){
   if(fromRemote && action && action.id && action.id!==lastSeenActionId){ lastSeenActionId=action.id; if(action.type==="decision" && Number(action.cardIndex)===currentIndex){ const actionSeed=deckSeed; showCurrentResult(action.choice); setTimeout(function(){ if(deckSeed===actionSeed && currentIndex===Number(action.cardIndex))swipeCard(action.choice); },900); } }
   return true;
 }
-async function initializeSharedState(){ if(typeof SE_API==="undefined" || !SE_API.store){ startFreshGame(false);return; } try{ const saved=await SE_API.store.get(STORE_KEY); const valid=applySharedState(saved,false); if(valid){ setDebugStatus("☁ Synchronisé"); return; } startFreshGame(true); }catch(error){ debug("❌ Lecture du store impossible"); startFreshGame(false); } }
+async function initializeSharedState(){ if(disposed)return; if(typeof SE_API==="undefined" || !SE_API.store){ startFreshGame(false);return; } try{ const saved=await SE_API.store.get(STORE_KEY); if(disposed)return; const valid=applySharedState(saved,false); if(valid){ setDebugStatus("☁ Synchronisé"); return; } startFreshGame(true); }catch(error){ if(disposed)return; debug("❌ Lecture du store impossible"); startFreshGame(false); } }
 function registerViewerVote(userId,username,choice){ if(isAnimating||gameFinished)return; if(choice!=="smash"&&choice!=="pass")return; const voterKey=userId||username.toLowerCase(); if(!voterKey)return; const previousVote=viewerVotes[voterKey]; if(previousVote===choice)return; viewerVotes[voterKey]=choice; updateVotes(); scheduleVoteSave(); }
 function saveCardResult(streamerChoice){ const character=deck[currentIndex]; if(!character)return; const alreadySaved=gameResults.some(function(entry){return entry.deckIndex===currentIndex;}); if(alreadySaved)return; const voteData=getVoteData(); gameResults.push({ deckIndex:currentIndex, name:character.name, origin:character.origin, credit:character.credit, streamerChoice, chatChoice:voteData.chatChoice, smashPercentage:voteData.smashPercentage, passPercentage:voteData.passPercentage, totalVotes:voteData.total }); }
 function showCurrentResult(streamerChoice){ const voteData=getVoteData(); const streamerLine=document.querySelector(".result-streamer"); const chatLine=document.querySelector(".result-chat"); if(resultStreamer)resultStreamer.textContent=streamerChoice==="smash"?"♥ SMASH":"✕ PASS"; if(streamerLine){ streamerLine.classList.remove("smash","pass"); streamerLine.classList.add(streamerChoice); } if(resultChat){ if(voteData.chatChoice==="none")resultChat.textContent="AUCUN VOTE"; else if(voteData.chatChoice==="tie")resultChat.textContent="50 / 50"; else if(voteData.chatChoice==="smash")resultChat.textContent="♥ "+voteData.smashPercentage+"% SMASH"; else resultChat.textContent="✕ "+voteData.passPercentage+"% PASS"; } if(chatLine){ chatLine.classList.remove("smash","pass"); if(voteData.chatChoice==="smash"||voteData.chatChoice==="pass")chatLine.classList.add(voteData.chatChoice); } if(result)result.classList.add("visible"); }
@@ -354,6 +360,7 @@ async function loadHostedCards() {
 }
 
 async function initializeWidget(obj) {
+  if (disposed) return;
   widgetReady = false;
   const fieldData = (obj && obj.detail && obj.detail.fieldData) || {};
   applyColors(fieldData);
@@ -361,9 +368,11 @@ async function initializeWidget(obj) {
   deckOrder = String(fieldData.deckOrder || "normal");
   showLoadStatus("Chargement du deck…", false);
   const loaded = await loadHostedCards();
+  if (disposed) return;
   buildConfiguredCharacters(loaded.cards);
   buildDeck();
   await initializeSharedState();
+  if (disposed) return;
   // Une session restaurée sur la même carte doit aussi remplir le HTML injecté.
   if (!gameFinished) {
     gameScreen.classList.remove("hidden");
@@ -395,6 +404,7 @@ function handleStreamElementsEvent(obj) {
 }
 
 function receive(type, obj) {
+  if (disposed) return;
   if (type === "onWidgetLoad") {
     lastLoad = obj;
     widgetReady = false;
@@ -415,6 +425,12 @@ function receive(type, obj) {
 }
 
 const bridge = window.__sopPeachiesBridge;
+window.__sopPeachiesDispose = function () {
+  disposed = true;
+  cardRenderRevision += 1;
+  if (voteSaveTimer) clearTimeout(voteSaveTimer);
+  if (bridge && bridge.receive === receive) bridge.receive = null;
+};
 if (bridge) {
   bridge.receive = receive;
   bridge.queue.splice(0).forEach(function (entry) { receive(entry[0], entry[1]); });
