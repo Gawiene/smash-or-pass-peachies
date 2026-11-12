@@ -71,6 +71,22 @@ L'URL à coller dans OBS est celle de StreamElements : elle fournit les événem
 Twitch et `SE_API.store`. L'URL GitHub Pages sert les fichiers du widget.
 L'URL personnelle de l'overlay reste dans OBS ; ne pas la publier dans GitHub.
 
+### Si le swipe paraît moins fluide dans OBS
+
+Dans **Sources**, faire clic droit sur la source **Navigateur** de l'overlay,
+puis **Propriétés**. Vérifier **Utiliser une fréquence d'images personnalisée**
+et **FPS** : OBS indique 30 FPS par défaut pour une source navigateur.
+Pour une sortie OBS à 60 FPS, tester aussi la source à **60 FPS**. Si la sortie
+OBS reste à 30 FPS, le rendu final reste limité à 30 images par seconde.
+
+Après une mise à jour publiée, utiliser **Actualiser le cache de la page actuelle**
+dans ces propriétés. Le CSS prépare la composition de la carte et coupe les
+flous d'arrière-plan pendant le swipe ; leur aspect au repos est conservé.
+Ces ajustements n'affectent ni les Fields, ni les votes, ni la synchronisation.
+Le gain réel dépend du rendu et de la charge d'OBS et doit être vérifié dans OBS.
+
+Référence : [propriétés des sources navigateur OBS](https://obsproject.com/kb/browser-source).
+
 ## 4. Jouer et tester
 
 Les viewers écrivent **`smash`** ou **`pass`** dans le chat, sans point d'exclamation.

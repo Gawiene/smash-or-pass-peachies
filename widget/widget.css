@@ -31,7 +31,7 @@ body { margin: 0; background: transparent; font-family: "Trebuchet MS", Arial, s
 }
 .sop-widget { width:100%; display:flex; flex-direction:column; align-items:center; padding:28px 42px; }
 .game-screen { width:460px; max-width:100%; }
-.card { width:100%; color:var(--widget-text); opacity:1; transform:translateX(0) rotate(0deg); transition:transform .7s cubic-bezier(.22,.8,.25,1),opacity .42s ease; }
+.card { width:100%; color:var(--widget-text); opacity:1; transform:translateX(0) rotate(0deg); transition:transform .7s cubic-bezier(.22,.8,.25,1),opacity .42s ease; will-change:transform,opacity; }
 .game-topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:0 5px; }
 .game-title { color:var(--widget-text); font-size:18px; font-weight:900; letter-spacing:1.7px; text-shadow:0 2px 8px color-mix(in srgb,var(--shadow) 40%,transparent); }
 .card-counter { padding:6px 10px; color:var(--widget-text-soft); background:color-mix(in srgb,var(--widget-bg) 90%,transparent); border:1px solid var(--widget-border); border-radius:999px; font-size:10px; font-weight:800; letter-spacing:.8px; }
@@ -63,3 +63,9 @@ body { margin: 0; background: transparent; font-family: "Trebuchet MS", Arial, s
 .sop-load-status { max-width:460px; margin:0 0 14px; padding:12px 16px; color:var(--widget-text); background:var(--widget-bg); border:1px solid var(--widget-border); border-radius:12px; font-size:13px; }
 .sop-load-status[hidden] { display:none; }
 .sop-load-status button { display:block; margin-top:10px; padding:7px 12px; color:var(--widget-text); background:var(--widget-soft); border:1px solid var(--widget-border); border-radius:8px; cursor:pointer; }
+
+/* Le flou conserve son rendu au repos ; éviter son recalcul pendant le swipe. */
+.card.swipe-smash .floating-choice,
+.card.swipe-pass .floating-choice,
+.card.swipe-smash .result-overlay,
+.card.swipe-pass .result-overlay { backdrop-filter:none; }
