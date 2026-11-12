@@ -242,7 +242,7 @@
   {
     "name": "Lane O’neill",
     "origin": "Campus driver",
-    "credit": "idkwaye",
+    "credit": "idkwaye, Noma, votre fidèle serviteuse !",
     "image": "https://gawiene.github.io/smash-or-pass-peachies/images/lane-oneill.webp"
   },
   {
@@ -520,5 +520,35 @@
     "origin": "Acteur écossais",
     "credit": "Aki",
     "image": "https://gawiene.github.io/smash-or-pass-peachies/images/ewan-mc-gregor.webp"
+  },
+  {
+    "name": "François Civil",
+    "origin": "Célébrité",
+    "credit": "LucileBoileau",
+    "image": "https://gawiene.github.io/smash-or-pass-peachies/images/francois-civil.webp"
+  },
+  {
+    "name": "Spirit",
+    "origin": "dessin animé",
+    "credit": "LucileBoileau",
+    "image": "https://gawiene.github.io/smash-or-pass-peachies/images/spirit.webp"
+  },
+  {
+    "name": "Negan",
+    "origin": "série",
+    "credit": "LucileBoileau",
+    "image": "https://gawiene.github.io/smash-or-pass-peachies/images/negan.webp"
+  },
+  {
+    "name": "Sandokan",
+    "origin": "série",
+    "credit": "LucileBoileau",
+    "image": "https://gawiene.github.io/smash-or-pass-peachies/images/sandokan.webp"
+  },
+  {
+    "name": "Roman Reigns",
+    "origin": "catch",
+    "credit": "LucileBoileau",
+    "image": "https://gawiene.github.io/smash-or-pass-peachies/images/roman-reigns.webp"
   }
 ]
