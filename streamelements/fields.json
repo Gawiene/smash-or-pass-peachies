@@ -1,0 +1,240 @@
+{
+  "widgetBackgroundColor": {
+    "type": "colorpicker",
+    "label": "Fond votes",
+    "value": "#F2EDE7",
+    "group": "🎨 Widget principal"
+  },
+  "widgetSecondaryColor": {
+    "type": "colorpicker",
+    "label": "Fond secondaire",
+    "value": "#E3DBD3",
+    "group": "🎨 Widget principal"
+  },
+  "widgetTextColor": {
+    "type": "colorpicker",
+    "label": "Texte principal",
+    "value": "#302C30",
+    "group": "🎨 Widget principal"
+  },
+  "widgetSecondaryTextColor": {
+    "type": "colorpicker",
+    "label": "Texte secondaire",
+    "value": "#746D72",
+    "group": "🎨 Widget principal"
+  },
+  "widgetBorderColor": {
+    "type": "colorpicker",
+    "label": "Bordures",
+    "value": "#C8BDB6",
+    "group": "🎨 Widget principal"
+  },
+  "widgetSmashColor": {
+    "type": "colorpicker",
+    "label": "Couleur Smash",
+    "value": "#C77886",
+    "group": "🎨 Widget principal"
+  },
+  "widgetPassColor": {
+    "type": "colorpicker",
+    "label": "Couleur Pass",
+    "value": "#7B8191",
+    "group": "🎨 Widget principal"
+  },
+  "imageFallbackColor": {
+    "type": "colorpicker",
+    "label": "Fond derrière l'image",
+    "value": "#D7CEC8",
+    "group": "🎨 Widget principal"
+  },
+  "imageOverlayColor": {
+    "type": "colorpicker",
+    "label": "Dégradé photo",
+    "value": "#211D21",
+    "group": "🎨 Widget principal"
+  },
+  "imageNameColor": {
+    "type": "colorpicker",
+    "label": "Nom sur la photo",
+    "value": "#FFFFFF",
+    "group": "🎨 Widget principal"
+  },
+  "imageSubtitleColor": {
+    "type": "colorpicker",
+    "label": "Provenance / crédit",
+    "value": "#DDDDDD",
+    "group": "🎨 Widget principal"
+  },
+  "resultBackgroundColor": {
+    "type": "colorpicker",
+    "label": "Fond résultat",
+    "value": "#F7F3EF",
+    "group": "✨ Résultat Streamer / Chat"
+  },
+  "resultLabelColor": {
+    "type": "colorpicker",
+    "label": "Labels STREAMER / CHAT",
+    "value": "#756D72",
+    "group": "✨ Résultat Streamer / Chat"
+  },
+  "resultTextColor": {
+    "type": "colorpicker",
+    "label": "Texte résultat",
+    "value": "#302C30",
+    "group": "✨ Résultat Streamer / Chat"
+  },
+  "resultSmashColor": {
+    "type": "colorpicker",
+    "label": "Smash résultat",
+    "value": "#C77886",
+    "group": "✨ Résultat Streamer / Chat"
+  },
+  "resultPassColor": {
+    "type": "colorpicker",
+    "label": "Pass résultat",
+    "value": "#7B8191",
+    "group": "✨ Résultat Streamer / Chat"
+  },
+  "summaryBackgroundColor": {
+    "type": "colorpicker",
+    "label": "Fond du récap",
+    "value": "#F2EDE7",
+    "group": "📊 Écran récapitulatif"
+  },
+  "summaryCardColor": {
+    "type": "colorpicker",
+    "label": "Fond des cartes",
+    "value": "#E3DBD3",
+    "group": "📊 Écran récapitulatif"
+  },
+  "summaryTextColor": {
+    "type": "colorpicker",
+    "label": "Texte principal",
+    "value": "#302C30",
+    "group": "📊 Écran récapitulatif"
+  },
+  "summarySecondaryTextColor": {
+    "type": "colorpicker",
+    "label": "Texte secondaire",
+    "value": "#746D72",
+    "group": "📊 Écran récapitulatif"
+  },
+  "summaryBorderColor": {
+    "type": "colorpicker",
+    "label": "Bordures",
+    "value": "#C8BDB6",
+    "group": "📊 Écran récapitulatif"
+  },
+  "summarySmashColor": {
+    "type": "colorpicker",
+    "label": "Couleur Smash",
+    "value": "#C77886",
+    "group": "📊 Écran récapitulatif"
+  },
+  "summaryPassColor": {
+    "type": "colorpicker",
+    "label": "Couleur Pass",
+    "value": "#7B8191",
+    "group": "📊 Écran récapitulatif"
+  },
+  "shadowColor": {
+    "type": "colorpicker",
+    "label": "Ombres",
+    "value": "#000000",
+    "group": "🎨 Widget principal"
+  },
+  "showDebug": {
+    "type": "checkbox",
+    "label": "Afficher le debug",
+    "value": false,
+    "group": "🔧 Debug"
+  },
+  "debugBackgroundColor": {
+    "type": "colorpicker",
+    "label": "Fond debug",
+    "value": "#171619",
+    "group": "🔧 Debug"
+  },
+  "debugTextColor": {
+    "type": "colorpicker",
+    "label": "Texte debug",
+    "value": "#F3EFF1",
+    "group": "🔧 Debug"
+  },
+  "debugStatusColor": {
+    "type": "colorpicker",
+    "label": "Statut debug",
+    "value": "#9ED5AD",
+    "group": "🔧 Debug"
+  },
+  "testViewer1Smash": {
+    "type": "button",
+    "label": "🧪 Viewer 1 : Smash",
+    "value": "viewer1-smash",
+    "group": "1. Tests chat"
+  },
+  "testViewer1Pass": {
+    "type": "button",
+    "label": "🧪 Viewer 1 : Pass",
+    "value": "viewer1-pass",
+    "group": "1. Tests chat"
+  },
+  "testViewer2Smash": {
+    "type": "button",
+    "label": "🧪 Viewer 2 : Smash",
+    "value": "viewer2-smash",
+    "group": "1. Tests chat"
+  },
+  "testViewer2Pass": {
+    "type": "button",
+    "label": "🧪 Viewer 2 : Pass",
+    "value": "viewer2-pass",
+    "group": "1. Tests chat"
+  },
+  "testViewer3Smash": {
+    "type": "button",
+    "label": "🧪 Viewer 3 : Smash",
+    "value": "viewer3-smash",
+    "group": "1. Tests chat"
+  },
+  "testViewer3Pass": {
+    "type": "button",
+    "label": "🧪 Viewer 3 : Pass",
+    "value": "viewer3-pass",
+    "group": "1. Tests chat"
+  },
+  "streamerSmash": {
+    "type": "button",
+    "label": "♥ Streamer : Smash",
+    "value": "streamer-smash",
+    "group": "2. Streamer"
+  },
+  "streamerPass": {
+    "type": "button",
+    "label": "✕ Streamer : Pass",
+    "value": "streamer-pass",
+    "group": "2. Streamer"
+  },
+  "deckOrder": {
+    "type": "dropdown",
+    "label": "Ordre des cartes",
+    "value": "random",
+    "options": {
+      "normal": "Dans l'ordre",
+      "random": "Aléatoire"
+    },
+    "group": "3. Navigation"
+  },
+  "nextCard": {
+    "type": "button",
+    "label": "➡️ Carte suivante",
+    "value": "next",
+    "group": "3. Navigation"
+  },
+  "resetDeck": {
+    "type": "button",
+    "label": "🔄 Recommencer le deck",
+    "value": "reset",
+    "group": "3. Navigation"
+  }
+}

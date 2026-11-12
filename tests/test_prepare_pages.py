@@ -30,7 +30,22 @@ class PagesTests(unittest.TestCase):
         (self.source / "images/unused.jpg").write_bytes(b"unused original")
         prepare(self.source, self.output)
         files = {path.relative_to(self.output).as_posix() for path in self.output.rglob("*") if path.is_file()}
-        self.assertEqual(files, {"images/joe.webp", "cardsData.json", "streamelements-data-snippet.json", ".nojekyll"})
+        self.assertEqual(files, {"images/joe.webp", "data/cardsData.json", "cardsData.json", "streamelements-data-snippet.json", ".nojekyll"})
+
+    def test_canonical_project_packages_widget_and_installer(self):
+        (self.source / "data").mkdir()
+        (self.source / "data/cardsData.json").write_text(json.dumps(self.cards))
+        for folder in ("widget", "streamelements"):
+            (self.source / folder).mkdir()
+        for filename in ("widget/widget.js", "widget/widget.css", "streamelements/loader.html"):
+            (self.source / filename).write_text("fixture")
+        (self.source / "streamelements/fields.json").write_text('{"showDebug":{"type":"checkbox","value":false}}')
+        prepare(self.source, self.output)
+        self.assertTrue((self.output / "widget/widget.js").is_file())
+        self.assertTrue((self.output / "widget/widget.css").is_file())
+        self.assertTrue((self.output / "streamelements/loader.html").is_file())
+        self.assertTrue((self.output / "data/cardsData.json").is_file())
+        self.assertEqual(json.loads((self.output / "cardsData.json").read_text()), self.cards)
 
     def test_rejects_missing_or_wrong_case_image(self):
         (self.source / "images/joe.webp").rename(self.source / "images/Joe.webp")

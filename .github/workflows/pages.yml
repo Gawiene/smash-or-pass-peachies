@@ -1,12 +1,13 @@
-name: Publier les images Smash or Pass Peachies
+name: Publier le widget Smash or Pass Peachies
 
 on:
   push:
     branches: [main]
     paths:
-      - 'deck/cardsData.json'
-      - 'deck/streamelements-data-snippet.json'
-      - 'deck/images/**'
+      - 'data/cardsData.json'
+      - 'images/**'
+      - 'widget/**'
+      - 'streamelements/**'
       - 'prepare_pages.py'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -31,7 +32,7 @@ jobs:
       - name: Récupérer le projet
         uses: actions/checkout@v7.0.1
       - name: Valider le deck et préparer les fichiers publics
-        run: python3 prepare_pages.py --source deck --output-dir .tmp/pages
+        run: python3 prepare_pages.py --source . --output-dir .tmp/pages
       - name: Configurer GitHub Pages
         uses: actions/configure-pages@v6.0.0
       - name: Envoyer les images et JSON

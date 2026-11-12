@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 .tmp/
 .build-backups/
+node_modules/

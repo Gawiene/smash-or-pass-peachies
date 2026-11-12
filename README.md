@@ -1,204 +1,201 @@
 # Smash or Pass Peachies
 
-Outil local pour préparer les images et les données du widget StreamElements.
-Le JSON fourni (64 cartes) est conservé dans `data/cardsData-source.json`.
-Il peut être utilisé directement : aucun CSV ou Excel n'est nécessaire.
+Widget StreamElements pour Twitch. GitHub Pages héberge le HTML injecté par le
+JavaScript, le CSS, le deck et les images. La streameuse copie seulement un petit
+loader HTML et les Fields dans un Custom Widget. Aucun jeton d'overlay n'est
+nécessaire dans le dépôt ou dans le loader.
 
-## Images téléchargées manuellement : ton deck actuel
+URL du projet : **https://gawiene.github.io/smash-or-pass-peachies/**
 
-Les 64 images que tu as enregistrées sont dans `images/`. La table
-`data/local-images.json` associe chaque nom de carte à son fichier original.
-Elle permet de préparer le deck entièrement hors connexion, sans retourner
-sur Google Drive. Le JSON source et les images originales sont conservés.
+## 1. Activer GitHub Pages et publier
 
-Depuis le terminal PowerShell du projet :
+Dans le dépôt `Gawiene/smash-or-pass-peachies` :
 
-```powershell
-.\.venv\Scripts\python.exe build_deck.py data/cardsData-source.json --image-map data/local-images.json --output-dir deck
+1. Ouvrir **Settings → Pages**.
+2. Dans **Build and deployment → Source**, choisir **GitHub Actions**.
+3. Après contrôle des changements locaux, les committer et les pousser sur `main`.
+4. Attendre la réussite du workflow **Publier le widget Smash or Pass Peachies**
+   dans l'onglet **Actions**. Il est aussi lançable avec **Run workflow**.
+
+Le dépôt est déjà public et Pages a déjà été activé pour les images. Cette
+migration doit encore être poussée manuellement pour publier le JavaScript,
+le CSS et la nouvelle URL du deck. Aucun push n'est effectué par les scripts locaux.
+
+Le workflow valide les références des cartes et prépare uniquement les fichiers
+nécessaires au widget. Les originaux, les rapports, les tests et les outils de
+préparation ne sont pas copiés dans le site Pages.
+
+Après publication, ces URL doivent répondre :
+
+- [JavaScript du widget](https://gawiene.github.io/smash-or-pass-peachies/widget/widget.js)
+- [CSS du widget](https://gawiene.github.io/smash-or-pass-peachies/widget/widget.css)
+- [Deck JSON](https://gawiene.github.io/smash-or-pass-peachies/data/cardsData.json)
+- [Exemple d'image](https://gawiene.github.io/smash-or-pass-peachies/images/joe.webp)
+
+## 2. Installer dans StreamElements
+
+1. Dans le compte StreamElements relié à la chaîne Twitch de la streameuse,
+   créer ou ouvrir un overlay, puis ajouter **Static / Custom → Custom Widget**.
+2. Ouvrir **Open Editor**. Dans **HTML**, remplacer tout le contenu par celui de
+   [`streamelements/loader.html`](streamelements/loader.html).
+3. Dans **Fields**, remplacer tout le contenu par celui de
+   [`streamelements/fields.json`](streamelements/fields.json).
+4. Laisser **CSS** et **JS** vides : leurs anciennes versions doivent être retirées
+   pour éviter d'exécuter le jeu deux fois. Aucun `css.txt` ou `js.txt` n'est nécessaire.
+5. Ne plus copier de deck dans **Data**. Sur un widget existant, retirer seulement
+   l'ancienne propriété `cardsData` si elle y reste ; conserver les autres valeurs
+   de configuration des Fields.
+6. Donner au widget environ **600 × 900 px**, le placer dans l'overlay, puis
+   enregistrer. Ajuster la taille selon la scène ; le debug demande un peu plus de hauteur.
+
+Le loader contient les liens CSS/JS et une petite capture des événements avant
+le téléchargement du script externe. **Copier le fichier complet**, même s'il
+est légèrement plus long que deux balises. Il évite de perdre `onWidgetLoad`
+si GitHub répond plus lentement que StreamElements.
+
+Le JavaScript crée lui-même tout le HTML d'origine. Les scripts restent dans le
+Custom Widget et utilisent directement son `SE_API` ; aucun iframe n'est ajouté.
+Les couleurs sont appliquées depuis les Fields par des variables CSS, sans
+placeholders `{{...}}` dans les fichiers hébergés.
+
+## 3. Ajouter l'overlay dans OBS
+
+Dans StreamElements, copier **l'URL de l'overlay**, puis dans OBS :
+
+1. Ajouter une source **Navigateur** à la scène.
+2. Coller l'URL de l'overlay StreamElements et utiliser ses dimensions,
+   par exemple **1920 × 1080** pour un overlay Full HD.
+3. Placer la source et vérifier le widget dans OBS.
+
+L'URL à coller dans OBS est celle de StreamElements : elle fournit les événements
+Twitch et `SE_API.store`. L'URL GitHub Pages sert les fichiers du widget.
+L'URL personnelle de l'overlay reste dans OBS ; ne pas la publier dans GitHub.
+
+## 4. Jouer et tester
+
+Les viewers écrivent **`smash`** ou **`pass`** dans le chat, sans point d'exclamation.
+Chaque viewer a un seul vote par carte et peut le modifier en envoyant l'autre mot.
+Les phrases contenant simplement ces mots ne comptent pas. Comme dans le widget
+d'origine, les espaces autour et la casse sont normalisés.
+
+Le streamer écrit **`!smash`** ou **`!pass`**. Seul le badge broadcaster permet
+de déclencher ces commandes ; les viewers ne peuvent pas choisir à sa place.
+Le résultat streamer/chat apparaît, puis la carte effectue son swipe et la
+suivante arrive automatiquement. Le récapitulatif s'affiche à la fin.
+
+Les Fields conservent :
+
+- Toutes les couleurs du widget, de la photo, du résultat, du récap et du debug.
+- Le debug optionnel, caché par défaut.
+- Les six boutons de test de vote des trois viewers, avec changement de vote.
+- Les boutons **Streamer : Smash** et **Streamer : Pass**.
+- **Carte suivante**, **Recommencer le deck**, et l'ordre **normal / aléatoire**.
+
+Pour tester, ouvrir simultanément l'éditeur StreamElements et la source OBS du
+**même overlay**, utiliser les boutons de test, puis vérifier les deux affichages.
+Faire ensuite un essai avec les messages Twitch et le compte broadcaster.
+
+## Synchronisation et chargement
+
+La clé `SE_API.store` **`smashorpassv3`**, la version d'état **3**, les données
+de votes/résultats et le mélange déterministe du widget d'origine sont conservés.
+Les événements `message`, `kvstore:update`, `event:test` et `widget-button` sont
+tous pris en charge. Les événements arrivant pendant le chargement du deck
+sont mis en attente, puis rejoués une fois l'état restauré.
+
+Le deck vient exclusivement de `data/cardsData.json` sur GitHub Pages. En cas
+d'erreur réseau ou de JSON invalide, le widget utilise la dernière version valide
+mémorisée localement si le sandbox permet ce cache, avec un message visible.
+Sans cache, il affiche **Deck indisponible** et un bouton **Réessayer** : aucune
+carte fictive et aucun état vide ne sont écrits dans le store. Le chargement
+réseau est limité à dix secondes avant cette récupération.
+
+Un changement de deck change sa signature et démarre une nouvelle session.
+L'éditeur et OBS doivent donc recharger la même version du deck après une mise
+à jour. Le cache facultatif est propre à chaque navigateur.
+
+## Mise à jour
+
+1. Remplacer ou modifier **`data/cardsData.json`**. C'est le deck utilisé par le
+   widget ; ne plus modifier le Data StreamElements pour ajouter des cartes.
+2. Ajouter les nouvelles images **WebP** dans **`images/`**, avec des noms en
+   minuscules sans espaces, par exemple `nouveau-personnage.webp`.
+3. Pour chaque carte, utiliser une URL complète respectant exactement la casse :
+
+   ```json
+   {
+     "name": "Nouveau personnage",
+     "origin": "Sa provenance",
+     "credit": "Pseudo",
+     "image": "https://gawiene.github.io/smash-or-pass-peachies/images/nouveau-personnage.webp"
+   }
+   ```
+
+4. Contrôler le JSON et les images, puis committer et pousser les fichiers
+   modifiés sur `main`. Le workflow republie le widget automatiquement.
+5. Après réussite du workflow, rafraîchir l'éditeur et la source Navigateur OBS
+   pour charger le nouveau deck. Aucun nouveau collage HTML/Fields n'est requis
+   pour une simple modification du deck.
+
+Pour une mise à jour du code ou du CSS qui paraît rester en cache, rafraîchir
+le cache de la source Navigateur OBS. On peut aussi ajouter le même paramètre
+`?v=2` aux deux URL CSS/JS dans le loader, puis réenregistrer le widget.
+
+## Fichiers utiles
+
+```text
+images/                         WebP utilisés par le widget
+data/cardsData.json             Deck de référence
+widget/widget.js                Jeu, HTML injecté et synchronisation
+widget/widget.css               Style d'origine et couleurs par défaut
+streamelements/loader.html       À copier dans HTML
+streamelements/fields.json       À copier dans Fields
+prepare_pages.py                Validation et préparation de la publication
+.github/workflows/pages.yml      Déploiement GitHub Pages
 ```
 
-**Les sorties actuelles à utiliser sont dans `deck/`** : `cardsData.json`,
-`streamelements-data-snippet.json`, `build-report.md` et `images/` (WebP normalisés).
-Les fichiers de sortie à la racine proviennent du premier essai sans accès Drive.
-Le dépôt cible est `Gawiene/smash-or-pass-peachies`. Le workflow GitHub Pages
-publie les images de `deck/images/` dans `/images/` à la racine du site.
-Les URL du snippet sont donc bien de la forme
-`https://gawiene.github.io/smash-or-pass-peachies/images/joe.webp`.
+Les 64 téléchargements d'origine restent dans `data/original-images/`.
+`data/local-images.json` les associe aux noms des cartes. `deck/` et les JSON
+de préparation à la racine restent disponibles pour l'ancien outillage, mais
+**le widget utilise seulement `data/cardsData.json` et `images/`**.
+Le site publié conserve aussi les anciennes URL publiques `/cardsData.json`
+et `/streamelements-data-snippet.json` pour compatibilité.
 
-Les chemins de la table sont relatifs au dossier contenant cette table.
-Les noms de carte doivent correspondre exactement au JSON source. Corriger la
-table si tu remplaces ou renommes un téléchargement. Le rapport indique pour
-chaque carte le fichier local utilisé. Les liens d'origine restent inchangés
-et l'affectation des noms WebP reste stable. Une entrée locale manquante est
-signalée sans tenter de retélécharger ce fichier sur Drive.
-
-## Installation dans VS Code
-
-Ouvrir ce dossier, puis un terminal PowerShell. Installer Python 3.10 ou plus récent
-si nécessaire (cocher « Add Python to PATH » lors de l'installation sous Windows).
+L'ancien outil Excel/JSON reste utilisable pour préparer des ajouts :
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+python -m pip install -r requirements.txt
+python build_deck.py data/cardsData-source.json --image-map data/local-images.json --output-dir deck
 ```
 
-Si Python est déjà installé mais que `python` n'est pas reconnu, essayer `py`
-pour la première commande. Dans VS Code, sélectionner ensuite l'interpréteur
-`.venv\Scripts\python.exe` avec « Python: Select Interpreter ».
+Pour importer ce résultat dans le widget, copier ensuite `deck/cardsData.json`
+vers `data/cardsData.json` et les WebP concernés de `deck/images/` vers `images/`,
+après contrôle. Pour Excel, remplacer le premier chemin par celui du classeur ;
+seules les lignes exactement au statut `Prêt` sont importées. Les options
+`--force`, `--base-url`, `--max-size` et `--quality` restent disponibles.
 
-## Utiliser ton JSON
+## Vérifications locales
+
+Préparer les fichiers à déployer dans un **nouveau dossier vide** :
 
 ```powershell
-.\.venv\Scripts\python.exe build_deck.py data/cardsData-source.json
+python prepare_pages.py --output-dir .tmp/pages-verification
 ```
 
-Avec l'environnement activé ou les dépendances déjà installées :
+Les tests JavaScript simulent StreamElements et deux instances du widget avec
+un store partagé, sans accéder à un overlay privé. Ils vérifient les votes,
+les commandes, les timings, le récap, les événements précoces, le mélange,
+la restauration et le fallback réseau. Avec Node.js 24 et les outils habituels :
 
 ```powershell
-python build_deck.py data/cardsData-source.json
-python build_deck.py data/cardsData-source.json --force
+npm install
+npm test
+python -m unittest discover -s tests -v
 ```
 
-Deux formes de JSON sont acceptées : `{"cardsData": [...]}` ou directement `[...]`.
-Chaque carte utilise `name`, `origin`, `credit`, `image`. `name` et `image` sont
-obligatoires ; les autres champs absents ou `null` deviennent `""`.
-**Toutes les cartes du JSON sont sélectionnées**, puisqu'il ne contient pas de statut.
-Le fichier source reste intact. Ne pas l'appeler comme une sortie dans le même
-dossier, par exemple `cardsData.json` : le script refuse de remplacer sa source.
+Ces simulations doivent être complétées par le test StreamElements/OBS décrit
+plus haut ; aucune session réelle n'est considérée validée par les seuls tests.
 
-## Utiliser le classeur Excel
-
-```powershell
-python build_deck.py "C:/chemin/Smash_or_Pass_preparation_par_carte.xlsx"
-python build_deck.py "C:/chemin/fichier.xlsx" --force
-```
-
-Feuille par défaut : `Préparation par carte`. Les en-têtes doivent être en ligne 1 :
-
-| Statut | Nom final | Provenance finale | Crédit final | Image finale |
-| --- | --- | --- | --- | --- |
-| Prêt | Nicholas Galitzine | Films | Lucepeach | https://… |
-
-Seul le statut **exactement** `Prêt` est traité. `prêt`, `Prêt ` et les autres
-statuts sont ignorés. Les noms et images manquants sont signalés par numéro de
-ligne sans bloquer les autres cartes. Les en-têtes manquants ou dupliqués bloquent
-le lancement, pour éviter de produire un deck erroné.
-
-Les hyperliens Excel sont lus via leur cible, même si le texte affiché est
-« Voir l'image ». Les formules sont lues via leur dernière valeur calculée :
-ouvrir, recalculer et enregistrer le classeur dans Excel avant l'import.
-Le script ne calcule pas les formules et n'exécute pas de formule HYPERLINK.
-
-## Images et options
-
-- Liens Drive acceptés : `/file/d/ID/view`, `/open?id=ID`, `/uc?id=ID`,
-  et liens de téléchargement `drive.usercontent.google.com/download?id=ID`.
-  Les clés `resourcekey` sont transmises. Le fichier doit être accessible
-  publiquement. Les redirections et les formulaires GET de confirmation de
-  téléchargement Drive sont gérés ; connexion privée, quota dépassé et autres
-  pages HTML sont signalés. Aucune connexion Google n'est effectuée.
-- Autres sites : fournir une URL directe JPEG, PNG ou WebP. Une page Reddit
-  contenant une image n'est pas une URL directe : remplacer le lien par celui
-  de l'image (souvent `i.redd.it`), ou enregistrer l'image localement.
-- Fichiers locaux : chemins absolus ou relatifs au **dossier du fichier source**.
-  Le fichier mentionné pour Niall Horan doit donc être placé dans `data/` si
-  tu conserves ton JSON à cet endroit, ou remplacé par une URL accessible.
-- Vérification du Content-Type et décodage réel par Pillow. Les réponses binaires
-  génériques sont acceptées uniquement si elles contiennent une vraie image.
-  Limite de téléchargement : 30 Mo. Les fichiers invalides sont exclus du deck.
-- WebP, qualité 85, grand côté limité à 1600 px, ratio et transparence conservés,
-  rotation EXIF appliquée, aucune image agrandie. Une image animée est aplatie
-  sur sa première image. Les métadonnées EXIF ne sont pas conservées.
-
-```powershell
-python build_deck.py data/cardsData-source.json --output-dir apercu --quality 85 --max-size 1600
-python build_deck.py data/cardsData-source.json --base-url "https://gawiene.github.io/smash-or-pass-peachies/images/"
-python build_deck.py fichier.xlsx --sheet "Préparation par carte" --timeout 30
-```
-
-Sans `--output-dir`, les sorties sont placées à côté du script, quel que soit
-le dossier depuis lequel la commande est lancée. La base URL désigne le dossier
-public `images/`, pas la racine du site.
-
-## Relancer sans perdre les corrections
-
-Les WebP existants et valides sont réutilisés sans modification par défaut.
-Un fichier invalide est signalé, pas écrasé silencieusement. Utiliser `--force`
-pour retélécharger et remplacer les images. En cas d'échec, l'ancien fichier
-reste sur disque mais la carte concernée est exclue du JSON de cette exécution.
-Aucune image n'est supprimée automatiquement.
-
-`build-manifest.json` mémorise les affectations nom/source → fichier. **Conserver
-ce fichier avec les images.** Il évite d'intervertir les images de deux noms
-identiques lors d'un réordonnancement. Les nouveaux slugs reçoivent `-2`, `-3`,
-etc. Les anciennes affectations restent réservées, même si une carte est retirée.
-Changer le nom ou la source d'une carte peut donc attribuer un nouveau suffixe.
-Lors du premier lancement sans manifest, les images déjà présentes avec le nom
-attendu sont adoptées : vérifier leur correspondance dans le contrôle manuel.
-Ne pas lancer deux préparations simultanément dans le même dossier de sortie.
-
-Les JSON sont régénérés à chaque exécution. S'ils ont changé, leur version
-précédente est copiée dans `.build-backups/` avant remplacement. Modifier de
-préférence le **JSON source** ou le classeur, car les corrections dans les JSON
-générés seront remplacées à la prochaine exécution. Le rapport est remplacé.
-
-Codes de sortie : `0` = succès sans erreur de carte ; `2` = deck partiel avec
-erreurs détaillées ; `1` = erreur bloquante ; `130` = interruption clavier.
-Les sorties ne sont pas régénérées si le fichier source ou la configuration
-est invalide. Les fichiers sont remplacés individuellement de manière atomique.
-
-## Contrôle manuel et publication
-
-Après chaque exécution :
-
-1. Lire `build-report.md` (cartes exclues, URLs problématiques, collisions et fichiers).
-2. Examiner les images dans `images/`, corriger les sources puis relancer au besoin.
-3. Vérifier `cardsData.json` (tableau) et `streamelements-data-snippet.json`
-   (objet avec la propriété `cardsData`).
-4. Après contrôle, committer et pousser les changements de `deck/` sur `main`
-   dans `Gawiene/smash-or-pass-peachies`. Le workflow publie automatiquement les
-   images normalisées et les deux JSON. Attendre la réussite du déploiement
-   dans GitHub Actions et vérifier une URL d'image avant de mettre à jour le widget.
-5. Copier la propriété `cardsData` du snippet dans l'onglet Data de StreamElements,
-   en conservant les autres propriétés éventuelles du widget et un JSON valide.
-
-Le script de préparation ne pousse rien vers GitHub et ne modifie pas StreamElements.
-Un push de `deck/` sur `main` déclenche la publication. Créer les fichiers
-localement ne suffit pas à les rendre accessibles sur GitHub Pages.
-
-## Hébergement GitHub Pages
-
-Dépôt : https://github.com/Gawiene/smash-or-pass-peachies
-
-Dans **Settings → Pages → Build and deployment → Source**, sélectionner
-**GitHub Actions**. Le workflow `.github/workflows/pages.yml` publie le contenu
-préparé par `prepare_pages.py` : uniquement les 64 WebP référencés (ou le nombre
-de cartes du prochain deck), les deux JSON et `.nojekyll`. Les téléchargements
-originaux, le rapport et le manifest ne sont pas inclus dans le site Pages.
-
-La préparation vérifie les URL, la présence des images et la casse exacte des
-noms avant d'envoyer le site. Le fichier `deck/images/joe.webp` est publié comme
-`/smash-or-pass-peachies/images/joe.webp`, sans le segment `deck/` dans l'URL.
-
-Vérification locale du contenu à déployer (dossier de sortie vide nécessaire) :
-
-```powershell
-.\.venv\Scripts\python.exe prepare_pages.py --output-dir .tmp/pages
-```
-
-GitHub Pages nécessite une offre compatible pour les dépôts privés. Avec
-GitHub Free, le dépôt doit être public. La préparation et le workflow ne
-changent jamais automatiquement la visibilité du dépôt.
-
-## Vérifications automatiques
-
-```powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
-
-Les tests utilisent des fichiers et un serveur HTTP temporaires ; ils ne
-modifient pas ton deck et ne nécessitent pas de compte Google.
-
-Références des bibliothèques : [openpyxl](https://openpyxl.readthedocs.io/en/stable/api/openpyxl.reader.excel.html),
-[Pillow](https://pillow.readthedocs.io/en/stable/reference/ImageOps.html),
-[Requests](https://requests.readthedocs.io/en/latest/user/quickstart/).
+Références officielles : [événements StreamElements](https://docs.streamelements.com/overlays/events),
+[structure et Fields](https://docs.streamelements.com/overlays/widget-structure),
+[SE_API.store](https://github.com/StreamElements/widgets/blob/master/docs/CustomWidget.md).
